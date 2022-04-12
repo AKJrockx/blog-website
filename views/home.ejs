@@ -3,4 +3,12 @@
     <p>
         <%= homeText %>
     </p>
-    <%- include('partials/footer'); -%>
+    <% newPosts.forEach(function(item) { %>
+        <h2>
+            <%= item.title %>
+        </h2>
+        <p>
+            <%= item.content.substring(0, 100) + " ..." %> <a href="posts/<%=item.title%>">Read More</a>
+        </p>
+        <% }) %>
+            <%- include('partials/footer'); -%>
