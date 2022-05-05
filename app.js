@@ -1,5 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
 const ejs = require("ejs");
 const _ = require("lodash");
 
@@ -8,15 +9,44 @@ const aboutContent = "Hac habitasse platea dictumst vestibulum rhoncus est pelle
 const contactContent = "Scelerisque eleifend donec pretium vulputate sapien. Rhoncus urna neque viverra justo nec ultrices. Arcu dui vivamus arcu felis bibendum. Consectetur adipiscing elit duis tristique. Risus viverra adipiscing at in tellus integer feugiat. Sapien nec sagittis aliquam malesuada bibendum arcu vitae. Consequat interdum varius sit amet mattis. Iaculis nunc sed augue lacus. Interdum posuere lorem ipsum dolor sit amet consectetur adipiscing elit. Pulvinar elementum integer enim neque. Ultrices gravida dictum fusce ut placerat orci nulla. Mauris in aliquam sem fringilla ut morbi tincidunt. Tortor posuere ac ut consequat semper viverra nam libero.";
 
 const app = express();
-let posts = [];
-
 app.set('view engine', 'ejs');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
+mongoose.connect("mongodb://localhost:27017/blogDB", { useNewUrlParser: true });
+const postSchema = {
+  title: String,
+  content: String
+};
+const Post = mongoose.model("Post", postSchema);
+
+
 app.get("/", (req, res) => {
-  res.render("home", { homeText: homeStartingContent, newPosts: posts });
+  Post.find({}, (err, posts) => {
+    res.render("home", { homeText: homeStartingContent, newPosts: posts });
+  });
+});
+
+app.get("/compose", (req, res) => {
+  res.render("compose");
+});
+
+app.post("/compose", (req, res) => {
+  const post = new Post ({
+    title: req.body.postTitle,
+    content: req.body.postContent
+  });
+  post.save(err => {
+    if (!err) res.redirect("/");
+  });
+});
+
+app.get("/posts/:postName", (req, res) => {
+  const requestedTitle = req.params.postName;
+  Post.findOne({title: requestedTitle}, (err, post) => {
+      res.render("post", { title: post.title, content: post.content });
+  });
 });
 
 app.get("/about", (req, res) => {
@@ -27,26 +57,5 @@ app.get("/contact", (req, res) => {
   res.render("contact", { contactText: contactContent });
 })
 
-app.get("/compose", (req, res) => {
-  res.render("compose");
-})
-
-app.post("/compose", (req, res) => {
-  const post = {
-    title: req.body.postTitle,
-    content: req.body.postContent
-  }
-  posts.push(post);
-  res.redirect("/");
-})
-
-app.get("/posts/:postName", (req, res) => {
-  const requestedTitle = req.params.postName;
-  posts.forEach((post) => {
-    if (_.lowerCase(requestedTitle) === _.lowerCase(post.title)) {
-      res.render("post", {title: post.title, content: post.content});
-    }
-  })
-})
 
 app.listen(3000, () => console.log('listening on port 3000'));
